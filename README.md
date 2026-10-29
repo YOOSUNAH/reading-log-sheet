@@ -67,3 +67,10 @@
 - **아이폰 (Safari)**: 하단 가운데 [공유] ➔ **[홈 화면에 추가]**
 - **갤럭시 (Chrome)**: 우측 상단 [점 3개 ⋮] ➔ **[홈 화면에 추가]**
 - 이제 바탕화면에서 나만의 예쁜 독서 서재 앱을 바로 실행할 수 있습니다! 🎉
+
+
+---
+## 예시 화면 
+<img width="463" height="854" alt="스크린샷 2026-10-29 오후 12 41 52" src="https://github.com/user-attachments/assets/e97d7269-1d2f-4bdc-bc32-6f5f9692cee0" />
+
+<img width="476" height="665" alt="스크린샷 2026-10-29 오후 12 41 57" src="https://github.com/user-attachments/assets/cb4351f2-58dc-4939-a3a3-bbe0498352e4" />
