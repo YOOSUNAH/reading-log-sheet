@@ -5,6 +5,13 @@
 
 const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID';
 
+// 별점은 1~5 정수로 제한 (비정상 값이 들어와도 화면이 멈추지 않도록)
+function normalizeScore(value) {
+  const n = Math.round(Number(value));
+  if (!n) return 5;
+  return Math.min(5, Math.max(1, n));
+}
+
 function getTargetSheet() {
   let ss = null;
   try {
@@ -73,7 +80,7 @@ function getBooks() {
         type: row[0] ? String(row[0]).trim() : '기타',
         title: title,
         author: row[2] ? String(row[2]).trim() : '작자 미상',
-        score: Number(row[3]) || 5,
+        score: normalizeScore(row[3]),
         startDate: startDate,
         endDate: endDate,
         imageUrl: coverImage,
@@ -113,7 +120,7 @@ function saveBook(book) {
   const cleanType = book.type ? String(book.type).trim() : '기타';
   const cleanTitle = String(book.title).trim();
   const cleanAuthor = book.author ? String(book.author).trim() : '';
-  const score = Number(book.score) || 5;
+  const score = normalizeScore(book.score);
   const startDate = book.startDate ? String(book.startDate).trim() : '';
   const endDate = book.endDate ? String(book.endDate).trim() : '';
   const coverImage = book.imageUrl ? String(book.imageUrl).trim() : '';
@@ -660,6 +667,12 @@ function getHtmlContent() {
       imageDropZone.classList.remove('border-emerald-400', 'bg-emerald-50/30');
     }
 
+    // 시트에서 온 텍스트를 innerHTML에 넣기 전 이스케이프 (XSS 방지)
+    function escapeHtml(value) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(value == null ? '' : value).replace(/[&<>"']/g, ch => map[ch]);
+    }
+
     function renderStarsEmoji(score) {
       let emojis = '';
       for (let i = 0; i < score; i++) emojis += '⭐';
@@ -680,7 +693,7 @@ function getHtmlContent() {
     function getCoverHtml(book, isLarge = false) {
       if (book.imageUrl && (book.imageUrl.startsWith('data:image') || book.imageUrl.startsWith('http'))) {
         return '<div class="w-full ' + (isLarge ? 'h-48' : 'h-32') + ' bg-slate-100 overflow-hidden relative">' +
-               '<img src="' + book.imageUrl + '" alt="' + book.title + '" class="w-full h-full object-cover object-center" onerror="this.parentElement.innerHTML = getDefaultCoverHtml(\'' + book.title + '\', \'' + book.type + '\', ' + isLarge + ');">' +
+               '<img src="' + escapeHtml(book.imageUrl) + '" alt="' + escapeHtml(book.title) + '" data-title="' + escapeHtml(book.title) + '" data-type="' + escapeHtml(book.type) + '" class="w-full h-full object-cover object-center" onerror="this.onerror = null; this.parentElement.outerHTML = getDefaultCoverHtml(this.dataset.title, this.dataset.type, ' + (isLarge ? 'true' : 'false') + ');">' +
                '</div>';
       }
       return getDefaultCoverHtml(book.title, book.type, isLarge);
@@ -696,8 +709,8 @@ function getHtmlContent() {
              '<div class="flex justify-between items-center text-[10px] text-white/70 font-semibold">' +
              '<span>BOOK LOG</span><i class="fa-solid fa-bookmark text-white/50"></i></div>' +
              '<div class="my-auto text-center px-1">' +
-             '<p class="serif-title font-bold text-sm tracking-tight text-white/95 line-clamp-2 leading-snug">' + title + '</p></div>' +
-             '<div class="text-[9px] text-white/50 text-right">' + (type || 'BOOK') + '</div>' +
+             '<p class="serif-title font-bold text-sm tracking-tight text-white/95 line-clamp-2 leading-snug">' + escapeHtml(title) + '</p></div>' +
+             '<div class="text-[9px] text-white/50 text-right">' + escapeHtml(type || 'BOOK') + '</div>' +
              '</div>';
     }
 
@@ -778,16 +791,16 @@ function getHtmlContent() {
             '<div class="p-4 flex-1 flex flex-col justify-between space-y-3">' +
               '<div class="space-y-1.5">' +
                 '<div class="flex items-center justify-between">' +
-                  '<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-md border ' + badgeClass + '">' + b.type + '</span>' +
-                  '<span class="text-[10px] text-slate-400 font-medium">' + periodStr + '</span>' +
+                  '<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-md border ' + badgeClass + '">' + escapeHtml(b.type) + '</span>' +
+                  '<span class="text-[10px] text-slate-400 font-medium">' + escapeHtml(periodStr) + '</span>' +
                 '</div>' +
-                '<h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-1">' + b.title + '</h3>' +
-                '<p class="text-xs text-slate-500 font-medium">' + (b.author || '작자 미상') + '</p>' +
+                '<h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-1">' + escapeHtml(b.title) + '</h3>' +
+                '<p class="text-xs text-slate-500 font-medium">' + escapeHtml(b.author || '작자 미상') + '</p>' +
               '</div>' +
               '<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">' +
                 '<p class="text-xs text-slate-700 italic line-clamp-2 leading-relaxed flex items-start gap-1">' +
                   '<i class="fa-solid fa-quote-left text-[9px] text-emerald-500 mt-1 flex-shrink-0"></i>' +
-                  '<span>' + firstLine + '</span>' +
+                  '<span>' + escapeHtml(firstLine) + '</span>' +
                 '</p>' +
               '</div>' +
               '<div class="pt-1 border-t border-slate-100 flex items-center justify-between">' +
@@ -839,16 +852,16 @@ function getHtmlContent() {
           '<div class="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">' +
             '<div>' +
               '<div class="flex items-center gap-1 mb-1">' +
-                '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border ' + badgeClass + '">' + b.type + '</span>' +
+                '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border ' + badgeClass + '">' + escapeHtml(b.type) + '</span>' +
               '</div>' +
-              '<h4 class="font-bold text-xs text-slate-800 line-clamp-1 leading-tight">' + b.title + '</h4>' +
-              '<p class="text-[10px] text-slate-400 line-clamp-1">' + (b.author || '') + '</p>' +
+              '<h4 class="font-bold text-xs text-slate-800 line-clamp-1 leading-tight">' + escapeHtml(b.title) + '</h4>' +
+              '<p class="text-[10px] text-slate-400 line-clamp-1">' + escapeHtml(b.author || '') + '</p>' +
             '</div>' +
             '<div class="pt-1 border-t border-slate-100 flex items-center justify-between">' +
               '<div class="text-[10px]">' +
                 '⭐ <span class="text-slate-600 font-bold">' + b.score + '점</span>' +
               '</div>' +
-              '<span class="text-[9px] text-slate-400">' + (b.endDate ? b.endDate.substring(5) : (b.startDate ? b.startDate.substring(5) : '')) + '</span>' +
+              '<span class="text-[9px] text-slate-400">' + escapeHtml(b.endDate ? b.endDate.substring(5) : (b.startDate ? b.startDate.substring(5) : '')) + '</span>' +
             '</div>' +
           '</div>';
 
